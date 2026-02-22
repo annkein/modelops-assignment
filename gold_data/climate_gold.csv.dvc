@@ -1,0 +1,5 @@
+outs:
+- md5: d7d1823a2d67c6fe53ab225b3b698972
+  size: 92118
+  hash: md5
+  path: climate_gold.csv
