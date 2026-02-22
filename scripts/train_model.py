@@ -35,12 +35,17 @@ commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-
 
 # Check the last MLflow run
 client = mlflow.tracking.MlflowClient()
-experiments = client.list_experiments()
-exp = [e for e in experiments if e.name == "Climate_Forecasting_gold"][0]
+exp = client.get_experiment_by_name("Climate_Forecasting_gold")
+
+if exp is None:
+    # If doesn't exist, create new
+    experiment_id = client.create_experiment("Climate_Forecasting_gold")
+else:
+    experiment_id = exp.experiment_id
 
 runs = client.search_runs(
-    experiment_ids=[exp.experiment_id],
-    order_by=["attributes.start_time DESC"],
+    experiment_ids=[experiment_id],
+    order_by=["start_time DESC"],
     max_results=1
 )
 
