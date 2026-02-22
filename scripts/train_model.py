@@ -30,6 +30,30 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Set MLflow experiment
 mlflow.set_experiment("Climate_Forecasting_gold")
 
+# Fetch the current data commit hash
+commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
+
+# Check the last MLflow run
+client = mlflow.tracking.MlflowClient()
+experiments = client.list_experiments()
+exp = [e for e in experiments if e.name == "Climate_Forecasting_gold"][0]
+
+runs = client.search_runs(
+    experiment_ids=[exp.experiment_id],
+    order_by=["attributes.start_time DESC"],
+    max_results=1
+)
+
+last_data_commit = None
+if runs:
+    last_run = runs[0]
+    last_data_commit = last_run.data.params.get("data_commit")
+
+# If the commit is the same, stop
+if last_data_commit == commit_hash:
+    print(f"No new data. Last run already used commit {commit_hash}")
+    exit(0)
+
 with mlflow.start_run():
     # Model training
     model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -43,11 +67,7 @@ with mlflow.start_run():
 
     # Log the parameters and metrics
     mlflow.log_param("n_estimators", 100)
-
-    # Log git commit of data
-    commit_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8").strip()
     mlflow.log_param("data_commit", commit_hash)
-
     mlflow.log_metric("RMSE", rmse)
     mlflow.log_metric("MAE", mae)
 
